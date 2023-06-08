@@ -1,0 +1,26 @@
+Load the necessary packages
+```{r}
+library(dplyr) # pipe operator
+library(tidytext) # unnest_tokens
+```
+
+Load the dataset
+```{r}
+speeches_data <- read.csv('Speeches.csv', sep=';') 
+speeches_data
+```
+
+Tokenize the text into words and remove stop words
+```{r}
+speeches_tidy <- speeches_data %>% 
+  unnest_tokens(output = word, input = Speech) %>%
+  anti_join(stop_words)
+speeches_tidy
+```
+
+Count the frequency of words in all the speeches
+```{r}
+speeches_frequency <- speeches_tidy %>% 
+  count(word, sort=T)
+speeches_frequency
+```
