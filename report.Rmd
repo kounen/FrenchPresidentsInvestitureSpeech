@@ -105,7 +105,7 @@ speeches_tidy
 <br />
 
 # Analysis - TF (Term Frequency)
-The terms used to designate France and the French are numerous. But also the internationalization of the discourse. In Mr. Mitterant's case, the words Paris and city at the top of the list demonstrate a more accessible vision on a national scale. In contrast, the words "world" in the speeches of Presidents Chirac, Hollande and Macron, which date from 2002 onwards (development of Europe...).
+The terms used to designate France and the French are numerous. But also the internationalization of the discourse. In Mr. Mitterant's case, the words Paris and city at the top of the list demonstrate a more accessible vision on a national scale. In contrast, the word "world" in the speeches of Presidents Chirac, Hollande and Macron, which date from 2002 (development of Europe...) underlines the internationalization policy that France intends to pursue.
 ```{r}
 # Extract the top 10 words in terms of frequency from each president's speeches
 top10tf <- speeches_tidy %>%
@@ -138,6 +138,10 @@ ggplot(top10tf, aes(x = reorder_within(word, n, President), # To order by word f
 <center>
 <img src="images/tf.png" width=1000>
 </center>
+As you can see above, the image appears a second time because the automatic rendering from Knit creates some displaying issues. So I prefer to put it again to be sure that you will be able to consult it.
+
+Also, as you can, I choose a similar color when the speech corresponds to the same President for a better understanding.
+This remarks can be apply for the next graph.
 
 <br />
 
@@ -145,8 +149,11 @@ ggplot(top10tf, aes(x = reorder_within(word, n, President), # To order by word f
 Formula used to compute tf-idf.
 $${\large\text{TF-IDF} = TF{\times}\log\frac{{\text{N}}}{{\text{DF}}}}$$
 The TF-IDF graph shows us more different words from one speech to another.
+
 Indeed, the presence of terms concerning climate is quite heterogeneous. Absent from the speeches until 2017, this mention is consistent with the social struggles over the environment that have been waged over the last 10 years in Europe and France (Greta Thunberg).
+
 The first speech calls for a new 'era', while subsequent speeches tend to praise their predecessors with 'decades', 'achieved', 'done'... What's more, almost all of them focus on the work that now lies ahead in their new mandate: 'need', 'demand', 'growth'...
+
 François Hollande's speech highlights the economic crisis of the late 2010s. The terms 'whatever', 'indispensable', 'hard', 'growth' and 'debt' underline this.
 ```{r}
 # - An indicator of the degree to which a word is uncommon but frequently used in a specific text
@@ -188,8 +195,11 @@ ggplot(top10tfidf, aes(x = reorder_within(word, tf_idf, President), # To order b
 
 # Sentimental Analysis using 'bing' lexicon
 Goal: Compare for each speech the distribution of positive and negative words.
+
 Then, to compare only the positive and negative aspects, let's use "bing", which is the most inclusive lexicon for this.
-There's a good balance between positive and negative words in each speech. Around 75% positive and 25% negative. It's a good ratio, given that an inaugural speech should motivate, but also remind us of the challenges to be overcome in the coming years.
+
+As you can see below, there's a good balance between positive and negative words in each speech. Around 75% positive and 25% negative. It's a good ratio, given that an inaugural speech should motivate (positive), but also remind us of the challenges to be overcome in the coming years (negative?).
+
 ```{r}
 speeches_posneg <- speeches_tidy %>%
   inner_join(get_sentiments("bing")) %>% # Use 'bing' lexicon
@@ -278,17 +288,23 @@ We can also see more negative emotions such as fear, anger and disgust for the y
 <center>
 <img src="images/emotions.png" width=1000>
 </center>
+As you can see, I tried to use colors corresponding to specific sentiments (red for anger/negative, orange for surprise, blue for trust...).
 
 <br />
 
 # Log Odds Ratio Analysis for Macron's speeches
 As you know, President Macron is the actual French President but was already President before.
 Let's compare his two investiture speeches to find some differences.
+
 For this purpose, what's better than using log odds ration method.
 $${\large\text{log odds ratio} = \log{\left(\frac{\left(\frac{n+1}{\text{total}+1}\right)_\text{Text A}}
                               {\left(\frac{n+1}{\text{total}+1}\right)_\text{Text B}}\right)}}$$
-This analysis of President Macron's speeches is quite interesting. Firstly, it could be the most truthful, given the size of these speeches, which are the most important. We can see that over these two mandates, the President has evolved his position. I'm thinking, for example, of the climate, which came last in his first term, whereas he gave it sufficient importance in his second term for our analysis to place the ecological cause in fourth position: 'ecological'.
-It should also be noted that during his first term, he focused on the last few decades, whereas in his second speech, 5 years later, he stressed the importance of "continuity" in his "project". As well as the novelty he can always bring to France ('new').
+This analysis of President Macron's speeches is quite interesting. 
+
+Firstly, it could be the most truthful, given the size of these speeches, which are the most important in our dataset. We can see that over these two mandates, the President has evolved his position. I'm thinking, for example, of the climate, which came last in his first term, whereas he gave it sufficient importance in his second term for our analysis to place the 'ecological' cause in fourth position.
+
+It should also be noted that during his first term, he focused on the last few 'decades', whereas in his second speech, 5 years later, he stressed the importance of "continuity" in his "project". As well as the novelty he can always bring to France ('new').
+
 ```{r}
 # Extract the top 10 words in terms of log odds ratio from Macron's speeches (2017 and 2022)
 top10lor <- speeches_tidy %>%
@@ -330,7 +346,7 @@ ggplot(top10lor, aes(x = reorder_within(word, log_odds_ratio, President), # To o
         panel.grid.major.y = element_blank()) # Remove y-axis grid lines
 ```
 
-- The *sign** and **magnitude** tell us which words are more important in the speech
+- The *sign* and *magnitude* tell us which words are more important in the speech
 - A positive number greater than 0 indicates greater importance in E.M. 2017's speech
 - Negative numbers less than 0 have more weight in E.M. 2022's speech
 - If it is close to 0, it has similar weight in both speeches
@@ -339,10 +355,14 @@ ggplot(top10lor, aes(x = reorder_within(word, log_odds_ratio, President), # To o
 
 # Speeches' Clusters by analyzing consecutive word pairs with n-gram
 Finally, let's try to capture a more global view of all the speeches.
+
 We can see the names of certain presidents stand out, particularly the first ones. We can therefore assume that our most recent presidents made a point of thanking them during their speeches.
+
 Last but not least, some of the expressions are present. Like "vive la république" (long live the republic), which closes almost every presidential speech.
-The importance of citizens in a republic is demonstrated by the red indicator at the bottom, which is the most important on this network.
-Finally, the famous French quote 'Liberté, Egalité, Fraternité' is present in this network, but without the word 'Fraternité'. Why is this? Is it because the elected candidate doesn't want to consider all citizens as brothers because they didn't all vote for him?
+
+The importance of 'citizen' in a republic is demonstrated by the red cluster at the bottom, which is the most important on this network.
+
+Finally, the famous French quote 'Liberty, Equality, Fraternity' is present in this network, but without the word 'Fraternity'. Why is this? Is it because the elected candidate doesn't want to consider all citizens as brothers because they didn't all vote for him?
 
 By making a network graph with Bigrams, we can:
 
@@ -398,7 +418,9 @@ N-grams:
 
 # Speeches' Clusters with Phi Coefficient
 To get a view of the more unique pairs in these speeches, let's use the Phi coefficient.
+
 Here we see that one cluster stands out very clearly in terms of generality. The one in pink, containing everything about Paris, its mayor and the city in general. It's clear that, at the start of this new period, the Fifth Republic, Paris was France, and political attention was focused on it. Fortunately, this thinking has evolved and become globalized, as all our analyses show.
+
 By making a network graph with Phi Coefficient, we can:
 
 - Network around highly relevant word pairs
@@ -451,4 +473,5 @@ Phi coefficient:
 # Conclusion
 
 This analysis shows that France, as a world power, hasn't always had the political will to climb so high on the international stage. Certainly after the damage the country suffered in the aftermath of the World Wars.
+
 In addition, the results achieved highlight a number of key factors (terrorism, economic crisis). This shows the historical importance of such events.
