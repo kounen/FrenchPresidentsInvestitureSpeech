@@ -8,12 +8,16 @@ output:
         fig_caption: yes
 ---
 
+<br />
+
 I chose to carry out this final project on French politics. To do so, I collected from an official government website the inaugural speeches of every French president of the Fifth Republic.
 The aim of this study is to see how their speeches have evolved, in keeping with the history of France.
 
 <br />
 
 Link to github repository : https://github.com/kounen/FrenchPresidentsInvestitureSpeech
+
+Link to RPubs : https://rpubs.com/lucghd/frenchpresidentsanalysis
 
 <br />
 
