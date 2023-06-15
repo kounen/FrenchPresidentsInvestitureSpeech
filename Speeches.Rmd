@@ -2,6 +2,8 @@ Load the necessary packages
 ```{r}
 library(dplyr) # pipe operator
 library(tidytext) # unnest_tokens
+library(stopwords) # to remove french and english stopwords
+library(SnowballC) # for stemming
 ```
 
 Load the dataset
@@ -10,11 +12,19 @@ speeches_data <- read.csv('Speeches.csv', sep=';')
 speeches_data
 ```
 
-Tokenize the text into words and remove stop words
+Tokenize the text into words, remove stop words (french and english) and stem the surviving ones
 ```{r}
+english_stopwords <- stopwords("en")
+french_stopwords <- stopwords("fr")
+
 speeches_tidy <- speeches_data %>% 
+  # Tokenize
   unnest_tokens(output = word, input = Speech) %>%
-  anti_join(stop_words)
+  # Remove stop words
+  anti_join(data.frame(word = english_stopwords), by = "word") %>%
+  anti_join(data.frame(word = french_stopwords), by = "word") %>%
+  # Apply stemming
+  mutate(word = wordStem(word, language = "en"))
 speeches_tidy
 ```
 
