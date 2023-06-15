@@ -8,12 +8,12 @@ output:
         fig_caption: yes
 ---
 
-J'ai choisi de réaliser ce projet final sur la politique française. Pour cela, j'ai pu collecté d'un site officiel du gouvernenement, le discours d'investiture de chaque président français de la cinquième république.
-L'objectif de cette étude est donc de voir une évolution dans leur discours cohérente avec l'histoire de la France.
+I chose to carry out this final project on French politics. To do so, I collected from an official government website the inaugural speeches of every French president of the Fifth Republic.
+The aim of this study is to see how their speeches have evolved, in keeping with the history of France.
 
 <br />
 
-Lien vers github : https://github.com/kounen/FrenchPresidentsInvestitureSpeech
+Link to github repository : https://github.com/kounen/FrenchPresidentsInvestitureSpeech
 
 <br />
 
@@ -47,8 +47,8 @@ library(widyr) # for pairwise_cor()
 ```
 
 # Load the dataset
-J'ai du recréer moi-même un csv à partir des discours trouvés. Pour chaque, j'ai précisé la date d'investiture, le président concerné ainsi que le lien vers la source d'origine.
-A prendre en compte que le texte original est français et que j'ai donc dû le traduire. Il faut donc prendre en compte lors de cette analyse, qu'une traduction étant une interprétation, les résultats ne peuvent être considéré comme véridique à 100%.
+I had to recreate a csv myself from the speeches I found. For each, I specified the date of inauguration, the president concerned and the link to the original source.
+Bear in mind that the original text is French, so I had to translate it. It's important to bear in mind that, since a translation is an interpretation, the results cannot be considered 100% accurate.
 ```{r}
 speeches_data <- read.csv('data/Speeches.csv', sep=';') 
 speeches_data
@@ -57,8 +57,8 @@ speeches_data
 <br />
 
 # Compare speeches' length
-Avant de passer à tout traitement de pré-processing, j'ai souhaité comparer la longueur de chaque.
-On peut ainsi très clairement voir que la longueur des discours n'a fait qu'augmenter depuis le début de cette cinquième république. Mais pourquoi? Est-ce parce qu'à l'époque, les présidents ne resentaient pas le besoin d'étaler leur futur mandat ou bien juste car aujourd'hui, même élu, un discours d'investiture est si important pour le président et surtout politisable qu'il doit, 'pour les caméras', prendre soin d'annoncer, remercier...
+Before going on to any pre-processing, I wanted to compare the length of each.
+We can clearly see that the length of speeches has only increased since the beginning of the Fifth Republic. But why? Is it because, back then, presidents didn't feel the need to spread out their future mandate, or is it just that today, even when elected, an inaugural speech is so important for the president, and so politicizable, that he or she must take care to announce, thank...
 ```{r}
 # Add a column containing for each speech, its length
 speeches_length <- speeches_data %>%
@@ -81,8 +81,8 @@ ggplot(speeches_length, aes(x = President, y = Length)) +
 <br />
 
 # Tokenize the text into words, remove stop words (french and english) and stem the surviving ones
-Ici, nous allons supprimer les mots "stop" à la fois anglais mais aussi français dans le doute qu'il en reste.
-Vous pouvez aussi si vous le souhaitez décommenté la ligne 'stemming' pour obtenir une analyse qui n'est pas sujette à des perturbations telles que singulier/pluriel, verbe infinitif/conjugué...
+Here, we're going to remove both the English and French "stop" words in case there are any left.
+If you wish, you can also uncomment the 'stemming' line to obtain an analysis that is not subject to disturbances such as singular/plural, infinitive/conjugated verb...
 ```{r}
 english_stopwords <- stopwords("en")
 french_stopwords <- stopwords("fr")
@@ -105,7 +105,7 @@ speeches_tidy
 <br />
 
 # Analysis - TF (Term Frequency)
-On peut remarque que les termes désignant la France et les Français sont nombreux. Mais aussi l'internationalisation du discours. Chez Mr Mitterant, les mots Paris et city en tête de liste, démontre une vision plus accès sur l'échelle nationale. A l'opposé des discours arrivant dès 2002 (développement de l'Europe...) où l'on peut voir les mots "world" chez les Présidents Chirac, Hollande et Macron.
+The terms used to designate France and the French are numerous. But also the internationalization of the discourse. In Mr. Mitterant's case, the words Paris and city at the top of the list demonstrate a more accessible vision on a national scale. In contrast, the words "world" in the speeches of Presidents Chirac, Hollande and Macron, which date from 2002 onwards (development of Europe...).
 ```{r}
 # Extract the top 10 words in terms of frequency from each president's speeches
 top10tf <- speeches_tidy %>%
@@ -144,10 +144,10 @@ ggplot(top10tf, aes(x = reorder_within(word, n, President), # To order by word f
 # Analysis - TF-IDF (Term Frequency - Inverse Document Frequency)
 Formula used to compute tf-idf.
 $${\large\text{TF-IDF} = TF{\times}\log\frac{{\text{N}}}{{\text{DF}}}}$$
-Le graphe TF-IDF nous permet de voir davantage de mots différents d'un discours à l'autre.
-En effet, la présence de termes concernant le climat est assez hétérogène. Absente jusqu'en 2017 des discours, cette mention concorde avec les luttes sociales sur l'environnement qui sont porté depuis les 10 dernières années en Europe et en France (Greta Thunberg).
-Le premier discours appel à une nouvelle 'era' alors que les suivants vont plutôt faire éloge de leurs prédécesseurs avec 'decades', 'achieved', 'done'... De plus, ils pensent presque tous au travail qu'il y a maintenant à accomplir sur leur nouveau mandat : 'need', 'demand', 'growth'...
-Le discours de François Hollande souligne bien la crise économique connue dans la fin des années 2010. Les termes 'whatever', 'indispensable', 'hard', 'growth' et 'debt' underline this.
+The TF-IDF graph shows us more different words from one speech to another.
+Indeed, the presence of terms concerning climate is quite heterogeneous. Absent from the speeches until 2017, this mention is consistent with the social struggles over the environment that have been waged over the last 10 years in Europe and France (Greta Thunberg).
+The first speech calls for a new 'era', while subsequent speeches tend to praise their predecessors with 'decades', 'achieved', 'done'... What's more, almost all of them focus on the work that now lies ahead in their new mandate: 'need', 'demand', 'growth'...
+François Hollande's speech highlights the economic crisis of the late 2010s. The terms 'whatever', 'indispensable', 'hard', 'growth' and 'debt' underline this.
 ```{r}
 # - An indicator of the degree to which a word is uncommon but frequently used in a specific text
 # - Used to find key words that reveal the personality of a text
@@ -189,7 +189,7 @@ ggplot(top10tfidf, aes(x = reorder_within(word, tf_idf, President), # To order b
 # Sentimental Analysis using 'bing' lexicon
 Goal: Compare for each speech the distribution of positive and negative words.
 Then, to compare only the positive and negative aspects, let's use "bing", which is the most inclusive lexicon for this.
-On observe une bonne balance dans la répartition de mots positifs et négatifs dans chaque discours. Environ 75% de positifs pour 25% de mots négatifs. C'est un bon ratio sachant qu'un discours d'investiture se doit de motiver mais aussi rappeler les défis à surmonter dans les prochaines années.
+There's a good balance between positive and negative words in each speech. Around 75% positive and 25% negative. It's a good ratio, given that an inaugural speech should motivate, but also remind us of the challenges to be overcome in the coming years.
 ```{r}
 speeches_posneg <- speeches_tidy %>%
   inner_join(get_sentiments("bing")) %>% # Use 'bing' lexicon
@@ -226,8 +226,8 @@ ggplot(speeches_posneg, aes(x = "", y = percentage, fill = Sentiment)) +
 <br />
 
 # Sentimental Analysis using 'nrc' lexicon
-Problème avec la précédente analyse. Nous n'avons pas assez de substances pour faire une véritable analyse sentimentale.
-Mais ce n'est pas compter sur le lexicon 'nrc'.
+Problem with previous analysis. We don't have enough substance to make a real sentimental analysis.
+But that's not to count on the 'nrc' lexicon.
 Most of the time, we use 'nrc' lexicon only for pure sentiment analysis (positive or negative).
 Nonetheless, this lexicon contains also 8 emotions.
 Let's use them to implement a more exhaustive analysis.
@@ -272,9 +272,9 @@ ggplot(speeches_sentiment, aes(x = factor(index), y = Percentage, fill = Sentime
   scale_fill_manual(values = sentiment_palette) # Use our custom color palette
 ```
 
-On peut très facilement voir que la majorité des Présidents cherche un sentiment de confiance chez leur auditoire.
-De plus, le sentiment de joie est très clairement présent. Ce qui n'est pas étonnant après des mois de campagne présidentiel mais aussi obtenir la fonction la plus haute d'un pays.
-On peut également voir davantage d'émotions négatives comme la peur, la colère et le dégoût pour les années 2007 et 2017. Cela est cohérent avec l'histoire où respectivement une importante crise économique et une hausse du nombres d'attentats en France se sont manifestées.
+It's easy to see that the majority of Presidents are looking for a feeling of confidence in their audience.
+What's more, the feeling of joy is clearly present. This is not surprising after months of campaigning for the presidency, but also after holding the highest office in the land.
+We can also see more negative emotions such as fear, anger and disgust for the years 2007 and 2017. This is consistent with history, which saw a major economic crisis and an increase in the number of terrorist attacks in France, respectively.
 <center>
 <img src="images/emotions.png" width=1000>
 </center>
@@ -287,8 +287,8 @@ Let's compare his two investiture speeches to find some differences.
 For this purpose, what's better than using log odds ration method.
 $${\large\text{log odds ratio} = \log{\left(\frac{\left(\frac{n+1}{\text{total}+1}\right)_\text{Text A}}
                               {\left(\frac{n+1}{\text{total}+1}\right)_\text{Text B}}\right)}}$$
-Cette analyse des discours du Président Macron est assez intéressante. Premièrement, c'est elle qui pourrait être la plus véridique de part la taille de ces discours qui sont les plus importants. On peut donc voir que sur ces deux mandats, le Président a évolué sur sa position. Je pense par exemple au climat qui venait en dernier sur son premier mandat alors qu'il y apporte suffisament d'importance lrs de son second mandat pour que notre analyse place la cause écologique en quatrième position : 'ecological'.
-Doit aussi être évoqué que lors de son premier mandat, il va chercher à parler des dernières décénies, alors que pour son second discours 5 ans plutard, il va souligné l'importance de la "continuité" de "projet". Ainsi que de la nouveauté qu'il peut toujours amméner à la France ('new').
+This analysis of President Macron's speeches is quite interesting. Firstly, it could be the most truthful, given the size of these speeches, which are the most important. We can see that over these two mandates, the President has evolved his position. I'm thinking, for example, of the climate, which came last in his first term, whereas he gave it sufficient importance in his second term for our analysis to place the ecological cause in fourth position: 'ecological'.
+It should also be noted that during his first term, he focused on the last few decades, whereas in his second speech, 5 years later, he stressed the importance of "continuity" in his "project". As well as the novelty he can always bring to France ('new').
 ```{r}
 # Extract the top 10 words in terms of log odds ratio from Macron's speeches (2017 and 2022)
 top10lor <- speeches_tidy %>%
@@ -338,11 +338,11 @@ ggplot(top10lor, aes(x = reorder_within(word, log_odds_ratio, President), # To o
 <br />
 
 # Speeches' Clusters by analyzing consecutive word pairs with n-gram
-Pour finir, nous allons essayer de capturer une vue plus globale de l'ensemble des discours.
-On peut voir les noms de certains présidents ressortir et plus précisément les premiers. On peut donc penser que nos derniers présidents ont eu à coeur de les remercier lors de leur discour.
-Enfin certaines expression sont présentes. Comme 'vive la république' qui vient clôturer presque tout discours présidentiel.
-L'importance des citoyens dans une république est démontré avec le clusteur rouge du bas qui est le plus important de ce réseau.
-Enfin remarques intéressantes, la célèbre citation française 'Liberté, Egalité, Fraternité' est présente dans ce réseau mais sans le mot 'Fraternité'. Pourquoi? Est-ce car le candidat élu ne souhaite pas considéré l'ensemble des citoyens comme des frères car ils n'ont pas tous votés pour lui?
+Finally, let's try to capture a more global view of all the speeches.
+We can see the names of certain presidents stand out, particularly the first ones. We can therefore assume that our most recent presidents made a point of thanking them during their speeches.
+Last but not least, some of the expressions are present. Like "vive la république" (long live the republic), which closes almost every presidential speech.
+The importance of citizens in a republic is demonstrated by the red indicator at the bottom, which is the most important on this network.
+Finally, the famous French quote 'Liberté, Egalité, Fraternité' is present in this network, but without the word 'Fraternité'. Why is this? Is it because the elected candidate doesn't want to consider all citizens as brothers because they didn't all vote for him?
 
 By making a network graph with Bigrams, we can:
 
@@ -397,8 +397,8 @@ N-grams:
 <br />
 
 # Speeches' Clusters with Phi Coefficient
-Afin d'avoir un point de vue sur les paires plus uniques dans ces discours, utilisons le Phi coefficient.
-On se rend compte ici qu'un cluster ressort très clairement de la généralité. Celui en rose, contenant tout ce qui concerne Paris, son maire et la ville en général. On comprend très clairement qu'au début de cette nouvelle période qu'est la cinquième république, Paris c'était la France et que l'attention politique y était centré. Pensée qui a heureusement évoluée et s'est globalisée comme le montre l'ensemble de nos analyses.
+To get a view of the more unique pairs in these speeches, let's use the Phi coefficient.
+Here we see that one cluster stands out very clearly in terms of generality. The one in pink, containing everything about Paris, its mayor and the city in general. It's clear that, at the start of this new period, the Fifth Republic, Paris was France, and political attention was focused on it. Fortunately, this thinking has evolved and become globalized, as all our analyses show.
 By making a network graph with Phi Coefficient, we can:
 
 - Network around highly relevant word pairs
@@ -450,5 +450,5 @@ Phi coefficient:
 
 # Conclusion
 
-On voit ainsi dans cette analyse, que la France en tant que puissance mondiale, n'a pas toujours eu cette envie politique de monter autant sur la scène internationale. Sûrement après les dégâts que le pays à pu connaître suite aux Guerres mondiales.
-De plus certains éléments marquants (terrorisme, crise économique) sont soulignés dans les résultats obtenus. Montrant donc l'importance historique de tels événements.
+This analysis shows that France, as a world power, hasn't always had the political will to climb so high on the international stage. Certainly after the damage the country suffered in the aftermath of the World Wars.
+In addition, the results achieved highlight a number of key factors (terrorism, economic crisis). This shows the historical importance of such events.
