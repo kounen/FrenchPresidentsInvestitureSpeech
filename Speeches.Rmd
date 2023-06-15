@@ -1,15 +1,44 @@
+Install the necessary packages
+```{r}
+install.packages("dplyr") # pipe operator
+install.packages("tidytext") # unnest_tokens
+install.packages("stopwords") # to remove french and english stop words
+install.packages("SnowballC") # for stemming
+```
+
 Load the necessary packages
 ```{r}
-library(dplyr) # pipe operator
-library(tidytext) # unnest_tokens
-library(stopwords) # to remove french and english stopwords
-library(SnowballC) # for stemming
+library(dplyr)
+library(tidytext)
+library(stopwords)
+library(SnowballC)
 ```
 
 Load the dataset
 ```{r}
 speeches_data <- read.csv('Speeches.csv', sep=';') 
 speeches_data
+```
+
+Compare speeches' length
+```{r}
+# Add a column containing for each speech, its length
+speeches_length <- speeches_data %>%
+  mutate(Length = nchar(Speech))
+speeches_data
+
+# Historical order
+speeches_length$President <- factor(speeches_length$President,
+                          levels = c("Valéry Giscard d'Estaing (1974)", "François Mitterrand (1981)",	"François Mitterrand (1988)", "Jacques Chirac (1995)", "Jacques Chirac (2002)", "Nicolas Sarkozy (2007)", "François Hollande (2012)", "Emmanuel Macron (2017)", "Emmanuel Macron (2022)"))
+
+# Create a speech length bar graph to compare them
+ggplot(speeches_length, aes(x = President, y = Length)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  labs(x = "President", y = "Speech Length") +
+  ggtitle("Inauguration Speech Length Comparison") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5), # Bold title, centered
+        panel.grid.major.x = element_blank(), # Remove x-axis grid lines
+        axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels for better readability
 ```
 
 Tokenize the text into words, remove stop words (french and english) and stem the surviving ones
@@ -22,15 +51,73 @@ speeches_tidy <- speeches_data %>%
   unnest_tokens(output = word, input = Speech) %>%
   # Remove stop words
   anti_join(data.frame(word = english_stopwords), by = "word") %>%
-  anti_join(data.frame(word = french_stopwords), by = "word") %>%
+  anti_join(data.frame(word = french_stopwords), by = "word") # Uncoment if you want stemming %>%
   # Apply stemming
-  mutate(word = wordStem(word, language = "en"))
+  # Uncoment if you want stemming mutate(word = wordStem(word, language = "en"))
 speeches_tidy
 ```
 
-Count the frequency of words in all the speeches
+Analysis - TF (Term Frequency)
 ```{r}
-speeches_frequency <- speeches_tidy %>% 
-  count(word, sort=T)
-speeches_frequency
+# Extract the top 10 words in terms of frequency from each president's speeches
+top10tf <- speeches_tidy %>%
+  count(President, word) %>%
+  group_by(President) %>%
+  slice_max(n, n = 10, with_ties = F) # False to avoid multiple elements with the same value
+top10tf
+
+# Historical order
+top10tf$President <- factor(top10tf$President,
+                          levels = c("Valéry Giscard d'Estaing (1974)", "François Mitterrand (1981)",	"François Mitterrand (1988)", "Jacques Chirac (1995)", "Jacques Chirac (2002)", "Nicolas Sarkozy (2007)", "François Hollande (2012)", "Emmanuel Macron (2017)", "Emmanuel Macron (2022)"))
+
+# Define my color palette
+my_colors <- c("blue", "red", "red", "orange", "orange", "green", "magenta", "brown", "brown")
+
+# Create the top 10 tf bar graph
+ggplot(top10tf, aes(x = reorder_within(word, n, President), # To order by word frequency
+                  y = n,
+                  fill = President)) +
+  geom_col(show.legend = F) + # To remove President legend
+  coord_flip() + # To flip axis
+  facet_wrap(~President, scales = "free", ncol = 2) + # To remove unused top10 words + space on x axis
+  scale_x_reordered() + # To remove x axis legends
+  scale_fill_manual(values = my_colors) + # To use my defined colors
+  labs(x = NULL) + # To remove reorder labels
+  ggtitle("Top 10 words by Term Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5), # Bold title, centered
+        panel.grid.major.y = element_blank()) # Remove y-axis grid lines
+```
+
+Analysis - TF-IDF (Term Frequency - Inverse Document Frequency)
+```{r}
+# - An indicator of the degree to which a word is uncommon but frequently used in a specific text
+# - Used to find key words that reveal the personality of a text
+
+# Extract the top 10 words in terms of tf-idf from each president's speeches
+top10tfidf <- speeches_tidy %>%
+  count(President, word) %>%
+  # Combine the term frequency (TF) and inverse document frequency (IDF) calculations into a single step
+  bind_tf_idf(term = word,           # Word
+              document = President,  # Text delimiter
+              n = n) %>%             # Word frequency
+  group_by(President) %>%
+  slice_max(tf_idf, n = 10, with_ties = F) # False to avoid multiple elements with the same value
+
+# Historical order
+top10tfidf$President <- factor(top10tfidf$President,
+                          levels = c("Valéry Giscard d'Estaing (1974)", "François Mitterrand (1981)",	"François Mitterrand (1988)", "Jacques Chirac (1995)", "Jacques Chirac (2002)", "Nicolas Sarkozy (2007)", "François Hollande (2012)", "Emmanuel Macron (2017)", "Emmanuel Macron (2022)"))
+
+# Create the top 10 tf-idf bar graph
+ggplot(top10tfidf, aes(x = reorder_within(word, tf_idf, President), # To order by tf-idf
+                  y = tf_idf,
+                  fill = President)) +
+  geom_col(show.legend = F) + # To remove President legend
+  coord_flip() + # To flip axis
+  facet_wrap(~President, scales = "free", ncol = 2) + # To remove unused top10 words + space on x axis
+  scale_x_reordered() + # To remove x axis legends
+  scale_fill_manual(values = my_colors) + # To use my previous defined colors
+  labs(x = NULL) + # To remove reorder labels
+  ggtitle("Top 10 words by Term Frequency - Inverse Document Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5), # Bold title, centered
+        panel.grid.major.y = element_blank()) # Remove y-axis grid lines
 ```
