@@ -1,31 +1,61 @@
-Install the necessary packages
-```{r}
-install.packages("dplyr") # pipe operator
-install.packages("tidytext") # unnest_tokens
-install.packages("stopwords") # to remove french and english stop words
-install.packages("SnowballC") # for stemming
+---
+title: "French Presidents Investiture Speech Analysis"
+author: "Lucas Guichard (50221623)"
+date: "2023, Thursday 15th June"
+output:
+    html_document:
+        code_folding: hide
+        fig_caption: yes
+---
+
+<br />
+
+Lien vers github : https://github.com/kounen/FrenchPresidentsInvestitureSpeech
+
+<br />
+
+```{r include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) # To avoid warning in HTML page
 ```
 
-Load the necessary packages
+# Install the necessary packages
 ```{r}
-library(dplyr)
-library(tidytext)
-library(stopwords)
-library(SnowballC)
+# Uncomment to install
+# install.packages("dplyr")
+# install.packages("tidytext")
+# install.packages("stopwords")
+# install.packages("SnowballC")
+# install.packages("ggraph")
+# install.packages("tidyr")
+# install.packages("tidygraph")
+# install.packages("widyr")
 ```
 
-Load the dataset
+# Load the necessary packages
+```{r}
+library(dplyr) # pipe operator
+library(tidytext) # unnest_tokens
+library(stopwords) # to remove french and english stop words
+library(SnowballC) # for stemming
+library(ggraph) # for visual graph construction
+library(tidyr) # for pivot_wider() function
+library(tidygraph) # for data graph construction
+library(widyr) # for pairwise_cor()
+```
+
+# Load the dataset
 ```{r}
 speeches_data <- read.csv('data/Speeches.csv', sep=';') 
 speeches_data
 ```
 
-Compare speeches' length
+<br />
+
+# Compare speeches' length
 ```{r}
 # Add a column containing for each speech, its length
 speeches_length <- speeches_data %>%
   mutate(Length = nchar(Speech))
-speeches_data
 
 # Historical order
 speeches_length$President <- factor(speeches_length$President,
@@ -41,7 +71,9 @@ ggplot(speeches_length, aes(x = President, y = Length)) +
         axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels for better readability
 ```
 
-Tokenize the text into words, remove stop words (french and english) and stem the surviving ones
+<br />
+
+# Tokenize the text into words, remove stop words (french and english) and stem the surviving ones
 ```{r}
 english_stopwords <- stopwords("en")
 french_stopwords <- stopwords("fr")
@@ -61,14 +93,15 @@ speeches_tidy <- speeches_data %>%
 speeches_tidy
 ```
 
-Analysis - TF (Term Frequency)
+<br />
+
+# Analysis - TF (Term Frequency)
 ```{r}
 # Extract the top 10 words in terms of frequency from each president's speeches
 top10tf <- speeches_tidy %>%
   count(President, word) %>%
   group_by(President) %>%
   slice_max(n, n = 10, with_ties = F) # False to avoid multiple elements with the same value
-top10tf
 
 # Historical order
 top10tf$President <- factor(top10tf$President,
@@ -90,9 +123,15 @@ ggplot(top10tf, aes(x = reorder_within(word, n, President), # To order by word f
   ggtitle("Top 10 words by Term Frequency") +
   theme(plot.title = element_text(face = "bold", hjust = 0.5), # Bold title, centered
         panel.grid.major.y = element_blank()) # Remove y-axis grid lines
+  
 ```
+<center>
+<img src="images/tf.png" width=1000>
+</center>
 
-Analysis - TF-IDF (Term Frequency - Inverse Document Frequency)
+<br />
+
+# Analysis - TF-IDF (Term Frequency - Inverse Document Frequency)
 $${\large\text{TF-IDF} = TF{\times}\log\frac{{\text{N}}}{{\text{DF}}}}$$
 ```{r}
 # - An indicator of the degree to which a word is uncommon but frequently used in a specific text
@@ -126,8 +165,13 @@ ggplot(top10tfidf, aes(x = reorder_within(word, tf_idf, President), # To order b
   theme(plot.title = element_text(face = "bold", hjust = 0.5), # Bold title, centered
         panel.grid.major.y = element_blank()) # Remove y-axis grid lines
 ```
+<center>
+<img src="images/tfidf.png" width=1000>
+</center>
 
-Sentimental Analysis using 'nrc' lexicon
+<br />
+
+# Sentimental Analysis using 'nrc' lexicon
 Most of the time, we use 'nrc' lexicon only for pure sentiment analysis (positive or negative).
 Nonetheless, this lexicon contains also 8 emotions.
 Let's use them to implement a more exhaustive analysis.
@@ -144,7 +188,6 @@ speeches_sentiment <- speeches_tidy %>%
   ungroup() %>%
   pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>% # Reshape table
   mutate_at(vars(anger, anticipation, disgust, fear, joy, sadness, surprise, trust), ~ . / total_words * 100) # Calculate a percentage for each sentiment
-speeches_sentiment
 
 # Historical order
 speeches_sentiment$President <- factor(speeches_sentiment$President,
@@ -166,14 +209,19 @@ speeches_sentiment <- speeches_sentiment %>%
 ggplot(speeches_sentiment, aes(x = factor(index), y = Percentage, fill = Sentiment)) +
   geom_bar(stat = "identity", position = "stack") +
   facet_wrap(~President, ncol = 2, scales = "free_x") +
-  labs(x = paste0("Chunk (", chunck_size, " lines)"), y = "Percentage") + # Dynamic legend
+  labs(x = paste0("Chunk (", chunk_size, " lines)"), y = "Percentage") + # Dynamic legend
   ggtitle("Sentiment Analysis by Chunk and President") +
   theme(plot.title = element_text(face = "bold", hjust = 0.5), # Bold title, centered
         panel.grid.major.y = element_blank()) + # Remove y-axis grid lines
   scale_fill_manual(values = sentiment_palette) # Use our custom color palette
 ```
+<center>
+<img src="images/emotions.png" width=1000>
+</center>
 
-Log Odds Ratio Analysis for Macron's speeches
+<br />
+
+# Log Odds Ratio Analysis for Macron's speeches
 As you know, President Macron is the actual French President but was already President before.
 Let's compare his two investiture speeches to find some differences.
 For this purpose, what's better than using log odds ration method.
@@ -219,12 +267,15 @@ ggplot(top10lor, aes(x = reorder_within(word, log_odds_ratio, President), # To o
   theme(plot.title = element_text(face = "bold", hjust = 0.5), # Bold title, centered
         panel.grid.major.y = element_blank()) # Remove y-axis grid lines
 ```
-- The *sign** and **magnitude** tell us which words are more important in the speech
-- A positive number greater than 0 indicates greater importance in EM2017's speech
-- Negative numbers less than 0 have more weight in EM2022's speech
-- If it is close to 0, it has similar weight in both speeches
 
-Sentimental Analysis using 'bing' lexicon
+- The *sign** and **magnitude** tell us which words are more important in the speech
+- A positive number greater than 0 indicates greater importance in E.M. 2017's speech
+- Negative numbers less than 0 have more weight in E.M. 2022's speech
+- If it is close to 0, it has similar weight in both speeches
+<br />
+<br />
+
+# Sentimental Analysis using 'bing' lexicon
 Goal: Compare for each speech the distribution of positive and negative words.
 Then, to compare only the positive and negative aspects, let's use "bing", which is the most inclusive lexicon for this.
 ```{r}
@@ -234,7 +285,6 @@ speeches_posneg <- speeches_tidy %>%
   group_by(President) %>%
   mutate(percentage = n / sum(n) * 100) %>% # Compute distribution in %
   rename(Sentiment = sentiment) # Rename sentiment column for aesthetics reason (legend displaying)
-speeches_posneg
 
 # Historical order
 speeches_posneg$President <- factor(speeches_posneg$President,
@@ -261,8 +311,11 @@ ggplot(speeches_posneg, aes(x = "", y = percentage, fill = Sentiment)) +
   )
 ```
 
-Speeches' Clusters by analyzing consecutive word pairs with n-gram
+<br />
+
+# Speeches' Clusters by analyzing consecutive word pairs with n-gram
 By making a network graph with Bigrams, we can:
+
   - Focus on pairs of words that occur frequently together in succession
   - Represented by highly related and simultaneously frequent words
   - Nodes are mostly connected
@@ -281,7 +334,6 @@ bigram_speeches <- speeches_data %>%
   count(word1, word2, sort = T) %>%
   # Remove NA values after stop words cleaning
   na.omit()
-bigram_speeches
 
 # Creating a network graph data
 graph_bigram <- bigram_speeches %>%
@@ -307,16 +359,20 @@ ggraph(graph_bigram, layout = "fr") +
   ggtitle("Speeches Bigrams network graph") +
   theme(plot.title = element_text(face = "bold", hjust = 0.5)) # Bold title, centered
 ```
-- N-grams
-  - Center around pairs of words that make sense when used together in succession
-  - When expressing the overall relationship between words  
 
-Speeches' Clusters with Phi Coefficient
+N-grams:
+
+- Center around pairs of words that make sense when used together in succession
+- When expressing the overall relationship between words  
+<br />
+
+# Speeches' Clusters with Phi Coefficient
 By making a network graph with Phi Coefficient, we can:
-  - Network around highly relevant word pairs
-  - Highly relevant words are represented even if they are less frequent
-  - Less relevant nodes are not connected
-      - Clusters of words are clearly visible, but it is difficult to see the overall relationship between words
+
+- Network around highly relevant word pairs
+- Highly relevant words are represented even if they are less frequent
+- Less relevant nodes are not connected
+- Clusters of words are clearly visible, but it is difficult to see the overall relationship between words
 ```{r}
 # Creating our Phi Coefficient data frame
 phi_speeches <- speeches_tidy %>%
@@ -354,6 +410,7 @@ ggraph(graph_phi, layout = "fr") +
   ggtitle("Speeches Phi Coefficient network graph") +
   theme(plot.title = element_text(face = "bold", hjust = 0.5)) # Bold title, centered
 ```
-- Phi coefficient
-  - Focus on highly related word pairs
-  - When you want to highlight clusters of words
+Phi coefficient:
+
+- Focus on highly related word pairs
+- When you want to highlight clusters of words
