@@ -165,7 +165,7 @@ speeches_sentiment <- speeches_sentiment %>%
 ggplot(speeches_sentiment, aes(x = factor(index), y = Percentage, fill = Sentiment)) +
   geom_bar(stat = "identity", position = "stack") +
   facet_wrap(~President, ncol = 2, scales = "free_x") +
-  labs(x = paste("Chunk (", chunck_size, " lines)", sep = ""), y = "Percentage") + # Dynamic legend
+  labs(x = paste0("Chunk (", chunck_size, " lines)"), y = "Percentage") + # Dynamic legend
   ggtitle("Sentiment Analysis by Chunk and President") +
   theme(plot.title = element_text(face = "bold", hjust = 0.5), # Bold title, centered
         panel.grid.major.y = element_blank()) + # Remove y-axis grid lines
@@ -193,25 +193,25 @@ top10lor <- speeches_tidy %>%
          ratio_EM2022 = ((EM2022 + 1) / (sum(EM2022 + 1))), # Weight of words in EM2022 speech
          odds_ratio = ratio_EM2017 / ratio_EM2022,
          log_odds_ratio = log(odds_ratio)) %>%
-  group_by(president = ifelse(log_odds_ratio > 0, "EM2017", "EM2022")) %>%
+  group_by(President = ifelse(log_odds_ratio > 0, "EM2017", "EM2022")) %>%
   slice_max(abs(log_odds_ratio), n = 10, with_ties = F) %>%
-  select(word, log_odds_ratio, president)
+  select(word, log_odds_ratio, President)
 
 # Refill president column with President's full name
-top10lor$president[top10lor$president == "EM2017"] <- "Emmanuel Macron (2017)"
-top10lor$president[top10lor$president == "EM2022"] <- "Emmanuel Macron (2022)"
+top10lor$President[top10lor$President == "EM2017"] <- "Emmanuel Macron (2017)"
+top10lor$President[top10lor$President == "EM2022"] <- "Emmanuel Macron (2022)"
 
 # Historical order
-top10lor$president <- factor(top10lor$president,
+top10lor$President <- factor(top10lor$President,
                              levels = c("Emmanuel Macron (2017)", "Emmanuel Macron (2022)"))
 
 # Create the top 10 log odds ratio bar graph
-ggplot(top10lor, aes(x = reorder_within(word, log_odds_ratio, president), # To order by log odds ratio
+ggplot(top10lor, aes(x = reorder_within(word, log_odds_ratio, President), # To order by log odds ratio
                   y = log_odds_ratio,
-                  fill = president)) +
+                  fill = President)) +
   geom_col(show.legend = F) + # To remove President legend
   coord_flip() + # To flip axis
-  facet_wrap(~president, scales = "free", ncol = 2) + # To remove unused top10 words + space on x axis
+  facet_wrap(~President, scales = "free", ncol = 2) + # To remove unused top10 words + space on x axis
   scale_x_reordered() + # To remove x axis legends
   labs(x = NULL) + # To remove reorder labels
   ggtitle("Top 10 words by Log Odds Ration for Macron's speeches") +
@@ -222,3 +222,40 @@ ggplot(top10lor, aes(x = reorder_within(word, log_odds_ratio, president), # To o
 - A positive number greater than 0 indicates greater importance in EM2017's speech
 - Negative numbers less than 0 have more weight in EM2022's speech
 - If it is close to 0, it has similar weight in both speeches
+
+Sentimental Analysis using 'bing' lexicon
+Goal: Compare for each speech the distribution of positive and negative words.
+Then, to compare only the positive and negative aspects, let's use "bing", which is the most inclusive lexicon for this.
+```{r}
+speeches_posneg <- speeches_tidy %>%
+  inner_join(get_sentiments("bing")) %>% # Use 'bing' lexicon
+  count(President, sentiment) %>%
+  group_by(President) %>%
+  mutate(percentage = n / sum(n) * 100) %>% # Compute distribution in %
+  rename(Sentiment = sentiment) # Rename sentiment column for aesthetics reason (legend displaying)
+speeches_posneg
+
+# Historical order
+speeches_posneg$President <- factor(speeches_posneg$President,
+                          levels = c("Valéry Giscard d'Estaing (1974)", "François Mitterrand (1981)",	"François Mitterrand (1988)", "Jacques Chirac (1995)", "Jacques Chirac (2002)", "Nicolas Sarkozy (2007)", "François Hollande (2012)", "Emmanuel Macron (2017)", "Emmanuel Macron (2022)"))
+
+# Create the circular graphs
+ggplot(speeches_posneg, aes(x = "", y = percentage, fill = Sentiment)) +
+  geom_bar(stat = "identity", width = 1, color = "white") +
+  geom_text(aes(
+    label = paste0(round(percentage), "%")), # Display percentage values on each graph
+    position = position_stack(vjust = 0.5),
+    color = "white",
+    size = 3) +
+  coord_polar("y", start = 0) +
+  facet_wrap(~President, strip.position = "bottom", ncol = 3, labeller = label_wrap_gen(width = 20)) +
+  scale_fill_manual(values = c("negative" = "red", "positive" = "darkgreen")) +
+  theme_void() + # Hide ugly graph details
+  ggtitle("Speeches positive/negative words distribution") +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    strip.text = element_text(size = 8, face = "bold"),
+    legend.margin = margin(t = 10, r = 10, b = 10, l = 50)
+  )
+```
