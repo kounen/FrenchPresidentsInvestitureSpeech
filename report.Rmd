@@ -16,7 +16,7 @@ library(SnowballC)
 
 Load the dataset
 ```{r}
-speeches_data <- read.csv('Speeches.csv', sep=';') 
+speeches_data <- read.csv('data/Speeches.csv', sep=';') 
 speeches_data
 ```
 
