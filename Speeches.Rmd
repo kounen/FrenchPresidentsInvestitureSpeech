@@ -93,6 +93,7 @@ ggplot(top10tf, aes(x = reorder_within(word, n, President), # To order by word f
 ```
 
 Analysis - TF-IDF (Term Frequency - Inverse Document Frequency)
+$${\large\text{TF-IDF} = TF{\times}\log\frac{{\text{N}}}{{\text{DF}}}}$$
 ```{r}
 # - An indicator of the degree to which a word is uncommon but frequently used in a specific text
 # - Used to find key words that reveal the personality of a text
@@ -258,4 +259,49 @@ ggplot(speeches_posneg, aes(x = "", y = percentage, fill = Sentiment)) +
     strip.text = element_text(size = 8, face = "bold"),
     legend.margin = margin(t = 10, r = 10, b = 10, l = 50)
   )
+```
+
+Speech Clusters by analyzing consecutive word pairs with n-gram
+By making a network graph with Bigrams, we can:
+  - Focus on pairs of words that occur frequently together in succession
+  - Represented by highly related and simultaneously frequent words
+  - Nodes are mostly connected
+  - Clustering of words is less clear, but overall relationship of words can be seen
+```{r}
+# Creating our Bigrams data frame
+bigram_speeches <- speeches_data %>%
+  unnest_tokens(input = Speech,
+                output = bigram,
+                token = "ngrams",
+                n = 2) %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  # Remove stop words
+  filter(!word1 %in% c(english_stopwords, french_stopwords),
+         !word2 %in% c(english_stopwords, french_stopwords)) %>%
+  count(word1, word2, sort = T) %>%
+  # Remove NA values after stop words cleaning
+  na.omit()
+bigram_speeches
+
+# Creating a network graph data
+graph_bigram <- bigram_speeches %>%
+  # Flimsy filter (we don't have a lot of data here)
+  filter(n >= 3) %>%
+  as_tbl_graph(directed = F) %>%
+  mutate(centrality = centrality_degree(), # Compute centrality
+         group = as.factor(group_infomap())) # Compute community
+
+# Creating our Bigrams network graph
+set.seed(1234)
+ggraph(graph_bigram, layout = "fr") +
+  geom_edge_link(color = "gray50",       # Edge color
+                 alpha = 0.5) +          # Edge contrast
+  geom_node_point(aes(size = centrality, # Node size
+                      color = group),    # Node color
+                  show.legend = F) +     # Legend removal
+  scale_size(range = c(5, 10)) +         # Range of node size
+  geom_node_text(aes(label = name),
+                 repel = T,
+                 size = 5) +
+  theme_graph()
 ```
