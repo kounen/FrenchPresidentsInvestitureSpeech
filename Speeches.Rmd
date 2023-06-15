@@ -171,3 +171,54 @@ ggplot(speeches_sentiment, aes(x = factor(index), y = Percentage, fill = Sentime
         panel.grid.major.y = element_blank()) + # Remove y-axis grid lines
   scale_fill_manual(values = sentiment_palette) # Use our custom color palette
 ```
+
+Log Odds Ratio Analysis for Macron's speeches
+As you know, President Macron is the actual French President but was already President before.
+Let's compare his two investiture speeches to find some differences.
+For this purpose, what's better than using log odds ration method.
+$${\large\text{log odds ratio} = \log{\left(\frac{\left(\frac{n+1}{\text{total}+1}\right)_\text{Text A}}
+                              {\left(\frac{n+1}{\text{total}+1}\right)_\text{Text B}}\right)}}$$
+```{r}
+# Extract the top 10 words in terms of log odds ratio from Macron's speeches (2017 and 2022)
+top10lor <- speeches_tidy %>%
+  filter(President %in% c("Emmanuel Macron (2017)", "Emmanuel Macron (2022)")) %>%
+  count(President, word) %>%
+  pivot_wider(names_from = President,
+              values_from = n,
+              values_fill = list(n = 0)) %>%
+  rename(EM2017 = `Emmanuel Macron (2017)`,
+         EM2022 = `Emmanuel Macron (2022)`) %>%
+  # Add `+1` to all values so that the frequency is greater than zero
+  mutate(ratio_EM2017 = ((EM2017 + 1) / (sum(EM2017 + 1))), # Weight of words in EM2017 speech
+         ratio_EM2022 = ((EM2022 + 1) / (sum(EM2022 + 1))), # Weight of words in EM2022 speech
+         odds_ratio = ratio_EM2017 / ratio_EM2022,
+         log_odds_ratio = log(odds_ratio)) %>%
+  group_by(president = ifelse(log_odds_ratio > 0, "EM2017", "EM2022")) %>%
+  slice_max(abs(log_odds_ratio), n = 10, with_ties = F) %>%
+  select(word, log_odds_ratio, president)
+
+# Refill president column with President's full name
+top10lor$president[top10lor$president == "EM2017"] <- "Emmanuel Macron (2017)"
+top10lor$president[top10lor$president == "EM2022"] <- "Emmanuel Macron (2022)"
+
+# Historical order
+top10lor$president <- factor(top10lor$president,
+                             levels = c("Emmanuel Macron (2017)", "Emmanuel Macron (2022)"))
+
+# Create the top 10 log odds ratio bar graph
+ggplot(top10lor, aes(x = reorder_within(word, log_odds_ratio, president), # To order by log odds ratio
+                  y = log_odds_ratio,
+                  fill = president)) +
+  geom_col(show.legend = F) + # To remove President legend
+  coord_flip() + # To flip axis
+  facet_wrap(~president, scales = "free", ncol = 2) + # To remove unused top10 words + space on x axis
+  scale_x_reordered() + # To remove x axis legends
+  labs(x = NULL) + # To remove reorder labels
+  ggtitle("Top 10 words by Log Odds Ration for Macron's speeches") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5), # Bold title, centered
+        panel.grid.major.y = element_blank()) # Remove y-axis grid lines
+```
+- The *sign** and **magnitude** tell us which words are more important in the speech
+- A positive number greater than 0 indicates greater importance in EM2017's speech
+- Negative numbers less than 0 have more weight in EM2022's speech
+- If it is close to 0, it has similar weight in both speeches
